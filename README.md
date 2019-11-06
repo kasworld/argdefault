@@ -12,7 +12,7 @@ example/main.go 참고
 
 default : 인자가 없는 경우 사용할 기본 값 
 
-argname : 이 태그가 있는 경우 이 필드가 commandline argument로 부터 설정됩ㄴ디ㅏ. 
+argname : 이 태그가 있는 경우 이 필드가 commandline argument로 부터 설정됩니다. 
 
     빈 값인 경우 : 필드 이름이 argument 이름이 됩니다. 
     있는 경우 : 이 값이 argument 이름이 됩니다. 
