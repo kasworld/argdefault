@@ -19,9 +19,9 @@ argname : 이 태그가 있는 경우 이 필드가 commandline argument로 부�
 
 ## 지원 하는 필드 타입 
 
-    Int, Int8, Int16, Int32, Int64
-    Uint, Uint8, Uint16, Uint32, Uint64
-    Float64, Float32
-    Bool
-    String
+    int, int8, int16, int32, int64
+    uint, uint8, uint16, uint32, uint64
+    float64, float32
+    bool
+    string
 
