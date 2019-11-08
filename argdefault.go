@@ -33,6 +33,7 @@ type ArgStatue struct {
 	stringArg map[string]*string
 }
 
+// New prepare default and arg flag
 func New(inObj interface{}) *ArgStatue {
 	as := &ArgStatue{
 		obj:           inObj,
@@ -52,7 +53,6 @@ func New(inObj interface{}) *ArgStatue {
 	return as
 }
 
-// SetDefault set inObj default value if field is zero value
 func (as *ArgStatue) processDefaultTag() {
 	objValue := reflect.ValueOf(as.obj).Elem()
 	for i := 0; i < objValue.NumField(); i++ {
@@ -99,6 +99,7 @@ func (as *ArgStatue) processDefaultTag() {
 	}
 }
 
+// SetDefaultToNonZeroField set inObj default value if field is zero value
 func (as *ArgStatue) SetDefaultToNonZeroField(inObj interface{}) {
 	destObjValue := reflect.ValueOf(inObj).Elem()
 	for i := 0; i < destObjValue.NumField(); i++ {
@@ -134,7 +135,7 @@ func (as *ArgStatue) SetDefaultToNonZeroField(inObj interface{}) {
 	}
 }
 
-// AddArgs set flag by inobj val default
+// RegisterFlag set flag with default
 func (as *ArgStatue) RegisterFlag() {
 	objValue := reflect.ValueOf(as.obj).Elem()
 	for i := 0; i < objValue.NumField(); i++ {
@@ -194,18 +195,14 @@ func (as *ArgStatue) RegisterFlag() {
 	}
 }
 
-// ApplyArgs return inObj with flag value
+// ApplyFlagTo set inobj from flag and return
 func (as *ArgStatue) ApplyFlagTo(inObj interface{}) interface{} {
-	// defaultObjValue := reflect.ValueOf(as.obj).Elem()
 	destObjValue := reflect.ValueOf(inObj).Elem()
 
 	for i := 0; i < destObjValue.NumField(); i++ {
 		fieldName := destObjValue.Type().Field(i).Name
 		fieldTag := destObjValue.Type().Field(i).Tag
-
-		// defaultObjField := defaultObjValue.Field(i)
 		destObjField := destObjValue.Field(i)
-
 		_, argexist := fieldTag.Lookup("argname")
 		if argexist {
 			switch destObjField.Kind() {
