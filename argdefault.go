@@ -18,70 +18,14 @@ import (
 	"strconv"
 )
 
-// SetDefault set inObj default value if field is zero value
-func SetZeroFieldToDefault(inObj interface{}) interface{} {
-	structValue := reflect.ValueOf(inObj).Elem()
-	numField := structValue.NumField()
-	for i := 0; i < numField; i++ {
-		structField := structValue.Field(i)
-		fieldTag := structValue.Type().Field(i).Tag
-		defaultVal, defaultExist := fieldTag.Lookup("default")
-		// is field has some value, not overwrite with default
-		if defaultExist && structField.IsZero() {
-			err := setFieldDefault(structField, defaultVal)
-			if err != nil {
-				fmt.Printf("%v\n", err)
-			}
-		}
-	}
-	return inObj
-}
-
-func setFieldDefault(structField reflect.Value, defaultVal string) error {
-	switch structField.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v, err := strconv.Atoi(defaultVal)
-		if err != nil {
-			return fmt.Errorf("invalid int field %v %v", defaultVal, err)
-		} else {
-			structField.SetInt(int64(v))
-		}
-
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		v, err := strconv.Atoi(defaultVal)
-		if err != nil {
-			return fmt.Errorf("invalid int field %v %v", defaultVal, err)
-		} else {
-			structField.SetUint(uint64(v))
-		}
-
-	case reflect.Float64, reflect.Float32:
-		v, err := strconv.ParseFloat(defaultVal, 64)
-		if err != nil {
-			return fmt.Errorf("invalid int field %v %v", defaultVal, err)
-		} else {
-			structField.SetFloat(v)
-		}
-
-	case reflect.Bool:
-		v, err := strconv.ParseBool(defaultVal)
-		if err != nil {
-			return fmt.Errorf("invalid int field %v %v", defaultVal, err)
-		} else {
-			structField.SetBool(v)
-		}
-
-	case reflect.String:
-		structField.SetString(defaultVal)
-
-	default:
-		return fmt.Errorf("unprocessed %v", structField)
-	}
-	return nil
-}
-
-// ArgStatue remember arg default map[fieldname]value
 type ArgStatue struct {
+	obj           interface{}
+	intDefault    map[string]int
+	uintDefault   map[string]uint
+	floatDefault  map[string]float64
+	boolDefault   map[string]bool
+	stringDefault map[string]string
+
 	intArg    map[string]*int
 	uintArg   map[string]*uint
 	floatArg  map[string]*float64
@@ -89,23 +33,115 @@ type ArgStatue struct {
 	stringArg map[string]*string
 }
 
-// AddArgs set flag by inobj val default
-func AddArgsWith(defaultObj interface{}) *ArgStatue {
+func New(inObj interface{}) *ArgStatue {
 	as := &ArgStatue{
+		obj:           inObj,
+		intDefault:    make(map[string]int),
+		uintDefault:   make(map[string]uint),
+		floatDefault:  make(map[string]float64),
+		boolDefault:   make(map[string]bool),
+		stringDefault: make(map[string]string),
+
 		intArg:    make(map[string]*int),
 		uintArg:   make(map[string]*uint),
 		floatArg:  make(map[string]*float64),
 		boolArg:   make(map[string]*bool),
 		stringArg: make(map[string]*string),
 	}
-	structValue := reflect.ValueOf(defaultObj).Elem()
-	for i := 0; i < structValue.NumField(); i++ {
-		fieldName := structValue.Type().Field(i).Name
-		structField := structValue.Field(i)
-		fieldTag := structValue.Type().Field(i).Tag
+	as.processDefaultTag()
+	return as
+}
 
+// SetDefault set inObj default value if field is zero value
+func (as *ArgStatue) processDefaultTag() {
+	objValue := reflect.ValueOf(as.obj).Elem()
+	for i := 0; i < objValue.NumField(); i++ {
+		structField := objValue.Field(i)
+		fieldName := objValue.Type().Field(i).Name
+		fieldTag := objValue.Type().Field(i).Tag
+		defaultVal, defaultExist := fieldTag.Lookup("default")
+		if defaultExist {
+			switch structField.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				v, err := strconv.Atoi(defaultVal)
+				if err != nil {
+					fmt.Printf("invalid int field %v %v\n", defaultVal, err)
+				} else {
+					as.intDefault[fieldName] = v
+				}
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				v, err := strconv.Atoi(defaultVal)
+				if err != nil {
+					fmt.Printf("invalid int field %v %v\n", defaultVal, err)
+				} else {
+					as.uintDefault[fieldName] = uint(v)
+				}
+			case reflect.Float64, reflect.Float32:
+				v, err := strconv.ParseFloat(defaultVal, 64)
+				if err != nil {
+					fmt.Printf("invalid int field %v %v\n", defaultVal, err)
+				} else {
+					as.floatDefault[fieldName] = v
+				}
+			case reflect.Bool:
+				v, err := strconv.ParseBool(defaultVal)
+				if err != nil {
+					fmt.Printf("invalid int field %v %v\n", defaultVal, err)
+				} else {
+					as.boolDefault[fieldName] = v
+				}
+			case reflect.String:
+				as.stringDefault[fieldName] = defaultVal
+			default:
+				fmt.Printf("unprocessed %v\n", structField)
+			}
+		}
+	}
+}
+
+func (as *ArgStatue) SetDefaultToNonZeroField(inObj interface{}) {
+	destObjValue := reflect.ValueOf(inObj).Elem()
+	for i := 0; i < destObjValue.NumField(); i++ {
+		fieldName := destObjValue.Type().Field(i).Name
+		fieldTag := destObjValue.Type().Field(i).Tag
+		destObjField := destObjValue.Field(i)
+		// skip non zero field
+		if !destObjField.IsZero() {
+			continue
+		}
+		_, defexist := fieldTag.Lookup("default")
+		if defexist {
+			switch destObjField.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				def, _ := as.intDefault[fieldName]
+				destObjField.SetInt(int64(def))
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				def, _ := as.uintDefault[fieldName]
+				destObjField.SetUint(uint64(def))
+			case reflect.Float64, reflect.Float32:
+				def, _ := as.floatDefault[fieldName]
+				destObjField.SetFloat(def)
+			case reflect.Bool:
+				def, _ := as.boolDefault[fieldName]
+				destObjField.SetBool(def)
+			case reflect.String:
+				def, _ := as.stringDefault[fieldName]
+				destObjField.SetString(def)
+			default:
+				fmt.Printf("unprocessed %v\n", fieldName)
+			}
+		}
+	}
+}
+
+// AddArgs set flag by inobj val default
+func (as *ArgStatue) RegisterFlag() {
+	objValue := reflect.ValueOf(as.obj).Elem()
+	for i := 0; i < objValue.NumField(); i++ {
+		fieldName := objValue.Type().Field(i).Name
+		structField := objValue.Field(i)
+		fieldTag := objValue.Type().Field(i).Tag
 		argname, argexist := fieldTag.Lookup("argname")
-		// is field has some value, not overwrite with default
 		if argexist {
 			if argname == "" {
 				argname = fieldName
@@ -114,61 +150,114 @@ func AddArgsWith(defaultObj interface{}) *ArgStatue {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				var argv int
 				as.intArg[fieldName] = &argv
-				flag.IntVar(&argv, argname, int(structField.Int()), fieldName)
+				if d, exist := as.intDefault[fieldName]; exist {
+					flag.IntVar(&argv, argname, d, fieldName)
+				} else {
+					flag.IntVar(&argv, argname, 0, fieldName)
+				}
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 				var argv uint
 				as.uintArg[fieldName] = &argv
-				flag.UintVar(&argv, argname, uint(structField.Uint()), fieldName)
+				if d, exist := as.uintDefault[fieldName]; exist {
+					flag.UintVar(&argv, argname, d, fieldName)
+				} else {
+					flag.UintVar(&argv, argname, 0, fieldName)
+				}
 			case reflect.Float64, reflect.Float32:
 				var argv float64
 				as.floatArg[fieldName] = &argv
-				flag.Float64Var(&argv, argname, structField.Float(), fieldName)
+				if d, exist := as.floatDefault[fieldName]; exist {
+					flag.Float64Var(&argv, argname, d, fieldName)
+				} else {
+					flag.Float64Var(&argv, argname, 0, fieldName)
+				}
 			case reflect.Bool:
 				var argv bool
 				as.boolArg[fieldName] = &argv
-				flag.BoolVar(&argv, argname, structField.Bool(), fieldName)
+				if d, exist := as.boolDefault[fieldName]; exist {
+					flag.BoolVar(&argv, argname, d, fieldName)
+				} else {
+					flag.BoolVar(&argv, argname, false, fieldName)
+				}
 			case reflect.String:
 				var argv string
 				as.stringArg[fieldName] = &argv
-				flag.StringVar(&argv, argname, structField.String(), fieldName)
+				if d, exist := as.stringDefault[fieldName]; exist {
+					flag.StringVar(&argv, argname, d, fieldName)
+				} else {
+					flag.StringVar(&argv, argname, "", fieldName)
+				}
 			default:
+				fmt.Printf("unprocessed %v\n", structField)
 			}
 		}
 	}
-	return as
 }
 
 // ApplyArgs return inObj with flag value
-func (as *ArgStatue) ApplyArgsTo(inObj interface{}) interface{} {
-	destStructValue := reflect.ValueOf(inObj).Elem()
-	for i := 0; i < destStructValue.NumField(); i++ {
-		fieldName := destStructValue.Type().Field(i).Name
-		structField := destStructValue.Field(i)
-		fieldTag := destStructValue.Type().Field(i).Tag
-		destObjField := destStructValue.Field(i)
+func (as *ArgStatue) ApplyFlagTo(inObj interface{}) interface{} {
+	// defaultObjValue := reflect.ValueOf(as.obj).Elem()
+	destObjValue := reflect.ValueOf(inObj).Elem()
+
+	for i := 0; i < destObjValue.NumField(); i++ {
+		fieldName := destObjValue.Type().Field(i).Name
+		fieldTag := destObjValue.Type().Field(i).Tag
+
+		// defaultObjField := defaultObjValue.Field(i)
+		destObjField := destObjValue.Field(i)
 
 		_, argexist := fieldTag.Lookup("argname")
 		if argexist {
-			switch structField.Kind() {
+			switch destObjField.Kind() {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				if v, exist := as.intArg[fieldName]; exist && *v != int(structField.Int()) {
-					destObjField.SetInt(int64(*v))
+				arg, existArg := as.intArg[fieldName]
+				def, _ := as.intDefault[fieldName]
+				if !existArg {
+					continue
+				}
+				if *arg != def {
+					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					destObjField.SetInt(int64(*arg))
 				}
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				if v, exist := as.uintArg[fieldName]; exist && *v != uint(structField.Uint()) {
-					destObjField.SetUint(uint64(*v))
+				arg, existArg := as.uintArg[fieldName]
+				def, _ := as.uintDefault[fieldName]
+				if !existArg {
+					continue
+				}
+				if *arg != def {
+					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					destObjField.SetUint(uint64(*arg))
 				}
 			case reflect.Float64, reflect.Float32:
-				if v, exist := as.floatArg[fieldName]; exist && *v != structField.Float() {
-					destObjField.SetFloat(*v)
+				arg, existArg := as.floatArg[fieldName]
+				def, _ := as.floatDefault[fieldName]
+				if !existArg {
+					continue
+				}
+				if *arg != def {
+					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					destObjField.SetFloat(*arg)
 				}
 			case reflect.Bool:
-				if v, exist := as.boolArg[fieldName]; exist && *v != structField.Bool() {
-					destObjField.SetBool(*v)
+				arg, existArg := as.boolArg[fieldName]
+				def, _ := as.boolDefault[fieldName]
+				if !existArg {
+					continue
+				}
+				if *arg != def {
+					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					destObjField.SetBool(*arg)
 				}
 			case reflect.String:
-				if v, exist := as.stringArg[fieldName]; exist && *v != structField.String() {
-					destObjField.SetString(*v)
+				arg, existArg := as.stringArg[fieldName]
+				def, _ := as.stringDefault[fieldName]
+				if !existArg {
+					continue
+				}
+				if *arg != def {
+					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					destObjField.SetString(*arg)
 				}
 			default:
 			}

@@ -34,13 +34,14 @@ type Config struct {
 }
 
 func main() {
+	ads := argdefault.New(&Config{})
+	ads.RegisterFlag()
+	flag.Parse()
 	config := &Config{
 		TowerNumber: 43,
 	}
-	argdefault.SetZeroFieldToDefault(config)
-	c := argdefault.AddArgsWith(config)
-	flag.Parse()
-	c.ApplyArgsTo(config)
-	// fmt.Println(prettystring.PrettyString(config, 4))
+	ads.SetDefaultToNonZeroField(config)
+	fmt.Printf("%#v\n", config)
+	ads.ApplyFlagTo(config)
 	fmt.Printf("%#v\n", config)
 }
