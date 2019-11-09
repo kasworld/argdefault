@@ -213,7 +213,7 @@ func (as *ArgStatue) ApplyFlagTo(inObj interface{}) interface{} {
 					continue
 				}
 				if *arg != def {
-					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					// fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
 					destObjField.SetInt(int64(*arg))
 				}
 			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -223,7 +223,7 @@ func (as *ArgStatue) ApplyFlagTo(inObj interface{}) interface{} {
 					continue
 				}
 				if *arg != def {
-					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					// fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
 					destObjField.SetUint(uint64(*arg))
 				}
 			case reflect.Float64, reflect.Float32:
@@ -233,7 +233,7 @@ func (as *ArgStatue) ApplyFlagTo(inObj interface{}) interface{} {
 					continue
 				}
 				if *arg != def {
-					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					// fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
 					destObjField.SetFloat(*arg)
 				}
 			case reflect.Bool:
@@ -243,7 +243,7 @@ func (as *ArgStatue) ApplyFlagTo(inObj interface{}) interface{} {
 					continue
 				}
 				if *arg != def {
-					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					// fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
 					destObjField.SetBool(*arg)
 				}
 			case reflect.String:
@@ -253,10 +253,11 @@ func (as *ArgStatue) ApplyFlagTo(inObj interface{}) interface{} {
 					continue
 				}
 				if *arg != def {
-					fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
+					// fmt.Printf("replace %v arg[%v] default[%v]\n", fieldName, *arg, def)
 					destObjField.SetString(*arg)
 				}
 			default:
+				fmt.Printf("unprocessed %v\n", destObjField)
 			}
 		}
 	}
