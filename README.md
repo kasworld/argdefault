@@ -1,4 +1,4 @@
-# make commandline argument from struct field and tag 
+# make commandline argument from struct field and tag and set field value 
 
 struct 의 field와 tag로 부터 명령행 인자의 이름과 default값을 자동으로 만들어 냅니다. 
 
@@ -55,6 +55,7 @@ example/main.go 참고
     }
 
     자동으로 아래와 같이 명령행 인자를 정의 해줍니다. 
+    또 해당 인자가 명령행으로 주어진 경우 그 값을 struct의 해당 field에 넣어 줍니다. 
     -ActTurnPerSec float
             ActTurnPerSec (default 2)
     -AdminPort string
